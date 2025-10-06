@@ -1,4 +1,5 @@
 const express = require('express');
+const auth = require('../middleware/auth');
 const {
     getAll, create, getOne, update, delete: remove
 } = require('../controllers/employeeController');
