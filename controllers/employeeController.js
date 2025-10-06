@@ -1,4 +1,5 @@
 const Employee = require('../models/Employee');
+const jwt = require('jsonwebtoken');
 
 exports.getAll = async (req, res) => {
     const employees = await Employee.find();
