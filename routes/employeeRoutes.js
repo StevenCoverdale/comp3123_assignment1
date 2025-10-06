@@ -6,6 +6,8 @@ const { validateEmployee } = require('../middleware/validate');
 const router = express.Router();
 const auth = require('../middleware/auth');
 
+const employeeController = require('../controllers/employeeController');
+
 router.get('/employees', getAll);
 router.post('/employees', validateEmployee, create);
 router.get('/employees/:eid', getOne);
