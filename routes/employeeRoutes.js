@@ -1,10 +1,10 @@
 const express = require('express');
-const auth = require('../middleware/auth');
 const {
     getAll, create, getOne, update, delete: remove
 } = require('../controllers/employeeController');
 const { validateEmployee } = require('../middleware/validate');
 const router = express.Router();
+const auth = require('../middleware/auth');
 
 router.get('/employees', getAll);
 router.post('/employees', validateEmployee, create);
