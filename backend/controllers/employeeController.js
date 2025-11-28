@@ -81,18 +81,24 @@ exports.delete = async (req, res) => {
 
 exports.search = async (req, res) => {
     try {
-        const { department, position } = req.query;
-        const filter = {};
+        const { query } = req.query;
 
-        if (department) {
-            filter.department = { $regex: department, $options: "i" };
+        if (!query) {
+            return res.status(400).json({ message: "Query parameter is required" });
         }
 
-        if (position) {
-            filter.position = { $regex: position, $options: "i" };
-        }
+        const regex = { $regex: query, $options: "i" };
 
-        const results = await Employee.find(filter);
+        const results = await Employee.find({
+            $or: [
+                { first_name: regex },
+                { last_name: regex },
+                { email: regex },
+                { department: regex },
+                { position: regex }
+            ]
+        });
+
         res.status(200).json(results);
     } catch (err) {
         res.status(500).json({ status: false, message: err.message });

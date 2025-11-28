@@ -7,15 +7,25 @@ function Employees() {
 
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [search, setSearch] = useState("");
 
     const { data: employees, isLoading } = useQuery({
-        queryKey: ["employees"],
-        queryFn: () =>
-            axiosClient.get("/emp/employees").then((res) => res.data),
+        queryKey: ["employees", search],
+        queryFn: () => {
+            if (!search.trim()) {
+                return axiosClient.get("/emp/employees").then((res) => res.data);
+            }
+            return axiosClient
+                .get("/emp/employees/search", { params: { query: search } })
+                .then((res) => res.data);
+        },
     });
 
     const createEmployee = useMutation({
-        mutationFn: (data) => axiosClient.post("/emp/employees", data),
+        mutationFn: (formData) =>
+            axiosClient.post("/emp/employees", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            }),
         onSuccess: () => {
             queryClient.invalidateQueries(["employees"]);
             setIsEditOpen(false);
@@ -24,7 +34,9 @@ function Employees() {
 
     const updateEmployee = useMutation({
         mutationFn: ({ eid, data }) =>
-            axiosClient.put(`/emp/employees/${eid}`, data),
+            axiosClient.put(`/emp/employees/${eid}`, data, {
+                headers: { "Content-Type": "multipart/form-data" },
+            }),
         onSuccess: () => {
             queryClient.invalidateQueries(["employees"]);
             setIsEditOpen(false);
@@ -44,6 +56,14 @@ function Employees() {
         <div style={pageStyle}>
             <h1 style={titleStyle}>Employees</h1>
 
+            <input
+                type="text"
+                placeholder="Search employees..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={searchStyle}
+            />
+
             <button
                 onClick={() => {
                     setSelectedEmployee({
@@ -52,6 +72,7 @@ function Employees() {
                         email: "",
                         department: "",
                         position: "",
+                        profile_picture: null,
                     });
                     setIsEditOpen(true);
                 }}
@@ -64,6 +85,7 @@ function Employees() {
                 <table style={tableStyle}>
                     <thead>
                     <tr>
+                        <th>Photo</th>
                         <th>First</th>
                         <th>Last</th>
                         <th>Email</th>
@@ -86,6 +108,15 @@ function Employees() {
                                 background: index % 2 === 0 ? "#f9fafb" : "white",
                             }}
                         >
+                            <td>
+                                {emp.profile_picture && (
+                                    <img
+                                        src={`http://localhost:3000${emp.profile_picture}`}
+                                        alt="profile"
+                                        style={avatarStyle}
+                                    />
+                                )}
+                            </td>
                             <td>{emp.first_name}</td>
                             <td>{emp.last_name}</td>
                             <td>{emp.email}</td>
@@ -112,14 +143,22 @@ function Employees() {
                 <EditEmployeeModal
                     employee={selectedEmployee}
                     onClose={() => setIsEditOpen(false)}
-                    onSave={(data) => {
+                    onSave={(form, file) => {
+                        const formData = new FormData();
+                        Object.keys(form).forEach((key) => {
+                            formData.append(key, form[key]);
+                        });
+                        if (file) {
+                            formData.append("profile_picture", file);
+                        }
+
                         if (selectedEmployee._id) {
                             updateEmployee.mutate({
                                 eid: selectedEmployee._id,
-                                data,
+                                data: formData,
                             });
                         } else {
-                            createEmployee.mutate(data);
+                            createEmployee.mutate(formData);
                         }
                     }}
                 />
@@ -139,6 +178,8 @@ function EditEmployeeModal({ employee, onClose, onSave }) {
         position: employee?.position || "",
     });
 
+    const [file, setFile] = useState(null);
+
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
@@ -156,10 +197,12 @@ function EditEmployeeModal({ employee, onClose, onSave }) {
                     <input name="email" value={form.email} onChange={handleChange} placeholder="Email" />
                     <input name="department" value={form.department} onChange={handleChange} placeholder="Department" />
                     <input name="position" value={form.position} onChange={handleChange} placeholder="Position" />
+
+                    <input type="file" onChange={(e) => setFile(e.target.files[0])} />
                 </div>
 
                 <div style={modalButtonRow}>
-                    <button onClick={() => onSave(form)} style={saveButtonStyle}>Save</button>
+                    <button onClick={() => onSave(form, file)} style={saveButtonStyle}>Save</button>
                     <button onClick={onClose} style={cancelButtonStyle}>Cancel</button>
                 </div>
             </div>
@@ -178,6 +221,14 @@ const titleStyle = {
     marginBottom: "20px",
     fontSize: "28px",
     fontWeight: "600",
+};
+
+const searchStyle = {
+    padding: "10px 14px",
+    borderRadius: "6px",
+    border: "1px solid #ccc",
+    width: "260px",
+    marginBottom: "15px",
 };
 
 const addButtonStyle = {
@@ -206,6 +257,13 @@ const tableStyle = {
 const rowStyle = {
     cursor: "pointer",
     transition: "background 0.2s",
+};
+
+const avatarStyle = {
+    width: "40px",
+    height: "40px",
+    borderRadius: "50%",
+    objectFit: "cover",
 };
 
 const deleteButtonStyle = {
