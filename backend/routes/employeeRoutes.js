@@ -34,6 +34,6 @@ router.put(
     update                            // Update employee
 );
 
-router.delete('/employees/:eid', auth, remove); // Delete employee (protected)
+router.delete('/employees/:eid', remove); // Delete employee (protected)
 
 module.exports = router;
