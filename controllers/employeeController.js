@@ -2,14 +2,37 @@ const Employee = require('../models/Employee');
 const jwt = require('jsonwebtoken');
 
 exports.getAll = async (req, res) => {
-    const employees = await Employee.find();
-    res.status(200).json(employees);
+    try {
+        const employees = await Employee.find();
+        res.status(200).json(employees);
+    } catch (err) {
+        res.status(500).json({ status: false, message: err.message });
+    }
 };
 
+
 exports.create = async (req, res) => {
-    const emp = await Employee.create(req.body);
-    res.status(201).json({ message: 'Employee created successfully.', employee_id: emp._id });
+    try {
+        const data = req.body;
+        const profile_picture = req.file ? `/uploads/${req.file.filename}` : null;
+
+        const employee = new Employee({
+            ...data,
+            profile_picture,
+            created_at: new Date(),
+            updated_at: new Date()
+        });
+
+        await employee.save();
+        res.status(201).json({
+            message: 'Employee created successfully.',
+            employee_id: employee._id
+        });
+    } catch (err) {
+        res.status(500).json({ status: false, message: err.message });
+    }
 };
+
 
 exports.getOne = async (req, res) => {
     const emp = await Employee.findById(req.params.eid);

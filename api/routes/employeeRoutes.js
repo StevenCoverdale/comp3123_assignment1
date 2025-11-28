@@ -1,17 +1,39 @@
 const express = require('express');
-const {
-    getAll, create, getOne, update, delete: remove
-} = require('../controllers/employeeController');
-const { validateEmployee } = require('../middleware/validate');
 const router = express.Router();
-const auth = require('../middleware/auth');
 
-const employeeController = require('../controllers/employeeController');
+// Import controller functions
+const {
+    getAll,        // GET all employees
+    create,        // POST new employee
+    getOne,        // GET one employee by ID
+    update,        // PUT update employee
+    delete: remove,// DELETE employee
+    search         // GET search employees by department/position
+} = require('../../controllers/employeeController');
 
-router.get('/employees', getAll);
-router.post('/employees', validateEmployee, create);
-router.get('/employees/:eid', getOne);
-router.put('/employees/:eid', update);
-router.delete('/employees/:eid', auth, employeeController.delete);
+// Import middleware
+const { validateEmployee } = require('../../middleware/validate'); // checks input
+const auth = require('../../middleware/auth');                     // checks JWT
+const upload = require('../../middleware/upload');                 // handles file upload
+
+// Routes
+router.get('/employees', getAll); // List all employees
+router.get('/employees/search', search); // Search by department/position
+
+router.post(
+    '/employees',
+    upload.single('profile_picture'), // Handle file upload
+    validateEmployee,                 // Validate input
+    create                            // Create employee
+);
+
+router.get('/employees/:eid', getOne); // Get one employee
+router.put(
+    '/employees/:eid',
+    upload.single('profile_picture'), // Optional update picture
+    update                            // Update employee
+);
+
+router.delete('/employees/:eid', auth, remove); // Delete employee (protected)
 
 module.exports = router;
