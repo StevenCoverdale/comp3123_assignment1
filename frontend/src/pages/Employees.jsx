@@ -1,242 +1,264 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-    useReactTable,
-    getCoreRowModel,
-    flexRender,
-    createColumnHelper,
-} from "@tanstack/react-table";
+import React, { useState } from "react";
 import axiosClient from "../api/axiosClient";
-
-const columnHelper = createColumnHelper();
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 function Employees() {
     const queryClient = useQueryClient();
 
-    const [form, setForm] = useState({
-        first_name: "",
-        last_name: "",
-        email: "",
-        position: "",
-        salary: "",
-    });
+    const [selectedEmployee, setSelectedEmployee] = useState(null);
+    const [isEditOpen, setIsEditOpen] = useState(false);
 
-    // ---- DATA FETCH (READ) ----
-    const {
-        data: employees = [],
-        isLoading,
-        error,
-    } = useQuery({
+    const { data: employees, isLoading } = useQuery({
         queryKey: ["employees"],
-        queryFn: async () => {
-            const res = await axiosClient.get("/emp/employees");
-            return res.data;
-        },
-        // Helps avoid over-eager refetching that can cause jank
-        refetchOnWindowFocus: false,
-        staleTime: 1000 * 30, // 30 seconds
+        queryFn: () =>
+            axiosClient.get("/emp/employees").then((res) => res.data),
     });
 
-    // ---- CREATE EMPLOYEE ----
     const createEmployee = useMutation({
-        mutationFn: async (payload) => {
-            return axiosClient.post("/emp/employees", payload);
-        },
+        mutationFn: (data) => axiosClient.post("/emp/employees", data),
         onSuccess: () => {
             queryClient.invalidateQueries(["employees"]);
+            setIsEditOpen(false);
         },
     });
 
-    // ---- DELETE EMPLOYEE ----
+    const updateEmployee = useMutation({
+        mutationFn: ({ eid, data }) =>
+            axiosClient.put(`/emp/employees/${eid}`, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries(["employees"]);
+            setIsEditOpen(false);
+        },
+    });
+
     const deleteEmployee = useMutation({
-        mutationFn: async (eid) => {
-            return axiosClient.delete(`/emp/employees/${eid}`);
-        },
+        mutationFn: (eid) => axiosClient.delete(`/emp/employees/${eid}`),
         onSuccess: () => {
             queryClient.invalidateQueries(["employees"]);
         },
     });
 
-    // ---- TABLE COLUMNS ----
-    const columns = [
-        columnHelper.accessor(
-            (row) => `${row.first_name ?? ""} ${row.last_name ?? ""}`,
-            {
-                id: "name",
-                header: "Name",
-            }
-        ),
-        columnHelper.accessor("email", {
-            header: "Email",
-        }),
-        columnHelper.accessor("position", {
-            header: "Position",
-        }),
-        columnHelper.accessor("salary", {
-            header: "Salary",
-            cell: ({ getValue }) => {
-                const v = getValue();
-                return v != null ? v : "";
-            },
-        }),
-        columnHelper.display({
-            id: "actions",
-            header: "Actions",
-            cell: ({ row }) => (
-                <button
-                    type="button"
-                    onClick={() => {
-                        const id = row.original?._id;
-                        if (!id) return;
-                        deleteEmployee.mutate(id);
-                    }}
-                >
-                    Delete
-                </button>
-            ),
-        }),
-    ];
+    if (isLoading) return <p>Loading employees...</p>;
 
-    const table = useReactTable({
-        data: employees,
-        columns,
-        getCoreRowModel: getCoreRowModel(),
-    });
-
-    // ---- FORM HANDLERS ----
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setForm((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
-    };
-
-    const handleCreate = (e) => {
-        e.preventDefault();
-
-        createEmployee.mutate({
-            ...form,
-            salary: Number(form.salary),
-        });
-
-        setForm({
-            first_name: "",
-            last_name: "",
-            email: "",
-            position: "",
-            salary: "",
-        });
-    };
-
-    // ---- RENDER ----
     return (
-        <div style={{ maxWidth: "800px", margin: "0 auto", padding: "20px" }}>
-            <h2>Employees</h2>
+        <div style={pageStyle}>
+            <h1 style={titleStyle}>Employees</h1>
 
-            {isLoading && <p>Loading employees...</p>}
-            {error && (
-                <p style={{ color: "red" }}>Failed to load employees. Check console/network.</p>
-            )}
+            <button
+                onClick={() => {
+                    setSelectedEmployee({
+                        first_name: "",
+                        last_name: "",
+                        email: "",
+                        position: "",
+                    });
+                    setIsEditOpen(true);
+                }}
+                style={addButtonStyle}
+            >
+                + Add New Employee
+            </button>
 
-            <h3>Add Employee</h3>
-            <form onSubmit={handleCreate} style={{ marginBottom: "20px" }}>
-                <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-                    <input
-                        type="text"
-                        name="first_name"
-                        placeholder="First name"
-                        value={form.first_name}
-                        onChange={handleChange}
-                        required
-                        style={{ flex: 1 }}
-                    />
-                    <input
-                        type="text"
-                        name="last_name"
-                        placeholder="Last name"
-                        value={form.last_name}
-                        onChange={handleChange}
-                        required
-                        style={{ flex: 1 }}
-                    />
-                </div>
-
-                <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-                    <input
-                        type="email"
-                        name="email"
-                        placeholder="Email"
-                        value={form.email}
-                        onChange={handleChange}
-                        required
-                        style={{ flex: 1 }}
-                    />
-                    <input
-                        type="text"
-                        name="position"
-                        placeholder="Position"
-                        value={form.position}
-                        onChange={handleChange}
-                        required
-                        style={{ flex: 1 }}
-                    />
-                </div>
-
-                <div style={{ marginBottom: "10px" }}>
-                    <input
-                        type="number"
-                        name="salary"
-                        placeholder="Salary"
-                        value={form.salary}
-                        onChange={handleChange}
-                        required
-                        style={{ width: "100%" }}
-                    />
-                </div>
-
-                <button type="submit" disabled={createEmployee.isPending}>
-                    {createEmployee.isPending ? "Creating..." : "Create Employee"}
-                </button>
-            </form>
-
-            <h3>Employee List</h3>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                            <th
-                                key={header.id}
-                                style={{
-                                    borderBottom: "1px solid #ccc",
-                                    padding: "8px",
-                                    textAlign: "left",
-                                }}
-                            >
-                                {flexRender(header.column.columnDef.header, header.getContext())}
-                            </th>
-                        ))}
+            <div style={cardStyle}>
+                <table style={tableStyle}>
+                    <thead>
+                    <tr>
+                        <th>First</th>
+                        <th>Last</th>
+                        <th>Email</th>
+                        <th>Position</th>
+                        <th></th>
                     </tr>
-                ))}
-                </thead>
-                <tbody>
-                {table.getRowModel().rows.map((row) => (
-                    <tr key={row.original?._id || row.id}>
-                        {row.getVisibleCells().map((cell) => (
-                            <td
-                                key={cell.id}
-                                style={{ padding: "8px", borderBottom: "1px solid #eee" }}
-                            >
-                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </thead>
+
+                    <tbody>
+                    {employees?.map((emp, index) => (
+                        <tr
+                            key={emp._id}
+                            onClick={() => {
+                                setSelectedEmployee(emp);
+                                setIsEditOpen(true);
+                            }}
+                            style={{
+                                ...rowStyle,
+                                background: index % 2 === 0 ? "#f9fafb" : "white",
+                            }}
+                        >
+                            <td>{emp.first_name}</td>
+                            <td>{emp.last_name}</td>
+                            <td>{emp.email}</td>
+                            <td>{emp.position}</td>
+                            <td>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteEmployee.mutate(emp._id);
+                                    }}
+                                    style={deleteButtonStyle}
+                                >
+                                    Delete
+                                </button>
                             </td>
-                        ))}
-                    </tr>
-                ))}
-                </tbody>
-            </table>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {isEditOpen && selectedEmployee && (
+                <EditEmployeeModal
+                    employee={selectedEmployee}
+                    onClose={() => setIsEditOpen(false)}
+                    onSave={(data) => {
+                        if (selectedEmployee._id) {
+                            updateEmployee.mutate({
+                                eid: selectedEmployee._id,
+                                data,
+                            });
+                        } else {
+                            createEmployee.mutate(data);
+                        }
+                    }}
+                />
+            )}
         </div>
     );
 }
 
 export default Employees;
+
+function EditEmployeeModal({ employee, onClose, onSave }) {
+    const [form, setForm] = useState({
+        first_name: employee?.first_name || "",
+        last_name: employee?.last_name || "",
+        email: employee?.email || "",
+        position: employee?.position || "",
+    });
+
+    const handleChange = (e) => {
+        setForm({ ...form, [e.target.name]: e.target.value });
+    };
+
+    return (
+        <div style={backdropStyle}>
+            <div style={modalStyle}>
+                <h2 style={{ marginBottom: "15px" }}>
+                    {employee._id ? "Edit Employee" : "Add New Employee"}
+                </h2>
+
+                <div style={modalFormStyle}>
+                    <input name="first_name" value={form.first_name} onChange={handleChange} placeholder="First Name" />
+                    <input name="last_name" value={form.last_name} onChange={handleChange} placeholder="Last Name" />
+                    <input name="email" value={form.email} onChange={handleChange} placeholder="Email" />
+                    <input name="position" value={form.position} onChange={handleChange} placeholder="Position" />
+                </div>
+
+                <div style={modalButtonRow}>
+                    <button onClick={() => onSave(form)} style={saveButtonStyle}>Save</button>
+                    <button onClick={onClose} style={cancelButtonStyle}>Cancel</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+const pageStyle = {
+    padding: "30px",
+    fontFamily: "Arial, sans-serif",
+    background: "#f5f7fa",
+    minHeight: "100vh",
+};
+
+const titleStyle = {
+    marginBottom: "20px",
+    fontSize: "28px",
+    fontWeight: "600",
+};
+
+const addButtonStyle = {
+    padding: "10px 16px",
+    background: "#4f46e5",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    marginBottom: "15px",
+    fontSize: "14px",
+};
+
+const cardStyle = {
+    background: "white",
+    padding: "20px",
+    borderRadius: "10px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+};
+
+const tableStyle = {
+    width: "100%",
+    borderCollapse: "collapse",
+};
+
+const rowStyle = {
+    cursor: "pointer",
+    transition: "background 0.2s",
+};
+
+const deleteButtonStyle = {
+    padding: "6px 10px",
+    background: "#dc2626",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+};
+
+const backdropStyle = {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.4)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+};
+
+const modalStyle = {
+    background: "white",
+    padding: "25px",
+    borderRadius: "10px",
+    width: "420px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+};
+
+const modalFormStyle = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+};
+
+const modalButtonRow = {
+    marginTop: "20px",
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "10px",
+};
+
+const saveButtonStyle = {
+    padding: "10px 16px",
+    background: "#16a34a",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+};
+
+const cancelButtonStyle = {
+    padding: "10px 16px",
+    background: "#6b7280",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+};
