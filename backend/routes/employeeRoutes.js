@@ -9,11 +9,11 @@ const {
     update,        // PUT update employee
     delete: remove,// DELETE employee
     search         // GET search employees by department/position
-} = require('../../controllers/employeeController');
+} = require('../controllers/employeeController');
 
 // Import middleware
-const { validateEmployee } = require('../../middleware/validate'); // checks input
-const auth = require('../../middleware/auth');                     // checks JWT
+const { validateEmployee } = require('../middleware/validate'); // checks input
+const auth = require('../middleware/auth');                     // checks JWT
 const upload = require('../../middleware/upload');                 // handles file upload
 
 // Routes

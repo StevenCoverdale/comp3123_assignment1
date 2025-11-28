@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: comp3123_mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: comp3123_assigment1
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build: ./backend
+    container_name: comp3123_backend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      MONGO_URI: mongodb://mongo:27017/comp3123_assigment1
+      JWT_SECRET: MySuperSecretKey123!@#
+    depends_on:
+      - mongo
+
+volumes:
+  mongo_data:
