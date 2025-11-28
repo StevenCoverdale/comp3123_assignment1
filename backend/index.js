@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');   // ✅ ADD THIS
+const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 require('dotenv').config();
@@ -8,7 +8,7 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ ENABLE CORS FOR FRONTEND (3001)
+
 app.use(cors({
     origin: "http://localhost:3001",
     credentials: true,
@@ -16,11 +16,13 @@ app.use(cors({
 
 app.use(express.json());
 
+app.use('/uploads', express.static('uploads'));
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
     dbName: 'comp3123_assigment1',
-}).then(() => console.log('✅ MongoDB connected'))
-    .catch(err => console.error('❌ MongoDB error:', err));
+}).then(() => console.log('MongoDB connected'))
+    .catch(err => console.error('MongoDB error:', err));
 
 // Routes
 app.use('/api/v1/user', userRoutes);

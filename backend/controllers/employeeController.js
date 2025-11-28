@@ -1,5 +1,4 @@
 const Employee = require('../models/Employee');
-const jwt = require('jsonwebtoken');
 
 exports.getAll = async (req, res) => {
     try {
@@ -9,7 +8,6 @@ exports.getAll = async (req, res) => {
         res.status(500).json({ status: false, message: err.message });
     }
 };
-
 
 exports.create = async (req, res) => {
     try {
@@ -24,15 +22,12 @@ exports.create = async (req, res) => {
         });
 
         await employee.save();
-        res.status(201).json({
-            message: 'Employee created successfully.',
-            employee_id: employee._id
-        });
+
+        res.status(201).json(employee);
     } catch (err) {
         res.status(500).json({ status: false, message: err.message });
     }
 };
-
 
 exports.getOne = async (req, res) => {
     try {
@@ -49,17 +44,24 @@ exports.getOne = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const updates = req.body;
+
         if (req.file) {
             updates.profile_picture = `/uploads/${req.file.filename}`;
         }
+
         updates.updated_at = new Date();
 
-        const employee = await Employee.findByIdAndUpdate(req.params.eid, updates, { new: true });
+        const employee = await Employee.findByIdAndUpdate(
+            req.params.eid,
+            updates,
+            { new: true }
+        );
+
         if (!employee) {
             return res.status(404).json({ status: false, message: 'Employee not found' });
         }
 
-        res.status(200).json({ message: 'Employee details updated successfully.' });
+        res.status(200).json(employee);
     } catch (err) {
         res.status(500).json({ status: false, message: err.message });
     }
@@ -71,7 +73,7 @@ exports.delete = async (req, res) => {
         if (!result) {
             return res.status(404).json({ status: false, message: 'Employee not found' });
         }
-        res.status(204).send(); // No content
+        res.status(204).send();
     } catch (err) {
         res.status(500).json({ status: false, message: err.message });
     }
@@ -81,8 +83,14 @@ exports.search = async (req, res) => {
     try {
         const { department, position } = req.query;
         const filter = {};
-        if (department) filter.department = department;
-        if (position) filter.position = position;
+
+        if (department) {
+            filter.department = { $regex: department, $options: "i" };
+        }
+
+        if (position) {
+            filter.position = { $regex: position, $options: "i" };
+        }
 
         const results = await Employee.find(filter);
         res.status(200).json(results);

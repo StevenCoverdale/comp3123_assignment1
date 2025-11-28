@@ -50,6 +50,7 @@ function Employees() {
                         first_name: "",
                         last_name: "",
                         email: "",
+                        department: "",
                         position: "",
                     });
                     setIsEditOpen(true);
@@ -66,6 +67,7 @@ function Employees() {
                         <th>First</th>
                         <th>Last</th>
                         <th>Email</th>
+                        <th>Department</th>
                         <th>Position</th>
                         <th></th>
                     </tr>
@@ -87,6 +89,7 @@ function Employees() {
                             <td>{emp.first_name}</td>
                             <td>{emp.last_name}</td>
                             <td>{emp.email}</td>
+                            <td>{emp.department}</td>
                             <td>{emp.position}</td>
                             <td>
                                 <button
@@ -132,6 +135,7 @@ function EditEmployeeModal({ employee, onClose, onSave }) {
         first_name: employee?.first_name || "",
         last_name: employee?.last_name || "",
         email: employee?.email || "",
+        department: employee?.department || "",
         position: employee?.position || "",
     });
 
@@ -150,6 +154,7 @@ function EditEmployeeModal({ employee, onClose, onSave }) {
                     <input name="first_name" value={form.first_name} onChange={handleChange} placeholder="First Name" />
                     <input name="last_name" value={form.last_name} onChange={handleChange} placeholder="Last Name" />
                     <input name="email" value={form.email} onChange={handleChange} placeholder="Email" />
+                    <input name="department" value={form.department} onChange={handleChange} placeholder="Department" />
                     <input name="position" value={form.position} onChange={handleChange} placeholder="Position" />
                 </div>
 
