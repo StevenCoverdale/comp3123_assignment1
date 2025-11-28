@@ -14,7 +14,7 @@ const {
 // Import middleware
 const { validateEmployee } = require('../middleware/validate'); // checks input
 const auth = require('../middleware/auth');                     // checks JWT
-const upload = require('../../middleware/upload');                 // handles file upload
+const upload = require('../middleware/upload');                 // handles file upload
 
 // Routes
 router.get('/employees', getAll); // List all employees
