@@ -25,5 +25,13 @@ services:
     depends_on:
       - mongo
 
+  frontend:
+    build: ./frontend
+    container_name: comp3123_frontend
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+
 volumes:
   mongo_data:
