@@ -35,23 +35,44 @@ exports.create = async (req, res) => {
 
 
 exports.getOne = async (req, res) => {
-    const emp = await Employee.findById(req.params.eid);
-    res.status(200).json(emp);
+    try {
+        const employee = await Employee.findById(req.params.eid);
+        if (!employee) {
+            return res.status(404).json({ status: false, message: 'Employee not found' });
+        }
+        res.status(200).json(employee);
+    } catch (err) {
+        res.status(500).json({ status: false, message: err.message });
+    }
 };
 
 exports.update = async (req, res) => {
-    await Employee.findByIdAndUpdate(req.params.eid, req.body);
-    res.status(200).json({ message: 'Employee details updated successfully.' });
+    try {
+        const updates = req.body;
+        if (req.file) {
+            updates.profile_picture = `/uploads/${req.file.filename}`;
+        }
+        updates.updated_at = new Date();
+
+        const employee = await Employee.findByIdAndUpdate(req.params.eid, updates, { new: true });
+        if (!employee) {
+            return res.status(404).json({ status: false, message: 'Employee not found' });
+        }
+
+        res.status(200).json({ message: 'Employee details updated successfully.' });
+    } catch (err) {
+        res.status(500).json({ status: false, message: err.message });
+    }
 };
 
 exports.delete = async (req, res) => {
     try {
-        const deleted = await Employee.findByIdAndDelete(req.params.eid);
-        if (!deleted) {
-            return res.status(404).json({ message: 'Employee not found.' });
+        const result = await Employee.findByIdAndDelete(req.params.eid);
+        if (!result) {
+            return res.status(404).json({ status: false, message: 'Employee not found' });
         }
-        res.status(200).json({ message: 'Employee deleted successfully.' });
+        res.status(204).send(); // No content
     } catch (err) {
-        res.status(500).json({ message: 'Error deleting employee.' });
+        res.status(500).json({ status: false, message: err.message });
     }
 };
