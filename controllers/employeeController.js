@@ -76,3 +76,17 @@ exports.delete = async (req, res) => {
         res.status(500).json({ status: false, message: err.message });
     }
 };
+
+exports.search = async (req, res) => {
+    try {
+        const { department, position } = req.query;
+        const filter = {};
+        if (department) filter.department = department;
+        if (position) filter.position = position;
+
+        const results = await Employee.find(filter);
+        res.status(200).json(results);
+    } catch (err) {
+        res.status(500).json({ status: false, message: err.message });
+    }
+};
