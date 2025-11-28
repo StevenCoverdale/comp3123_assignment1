@@ -17,7 +17,7 @@ const auth = require('../middleware/auth');                     // checks JWT
 const upload = require('../middleware/upload');                 // handles file upload
 
 // Routes
-router.get('/employees', auth, getAll); // List all employees
+router.get('/employees', getAll); // List all employees
 router.get('/employees/search', search); // Search by department/position
 
 router.post(

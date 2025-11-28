@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     useReactTable,
@@ -6,12 +7,12 @@ import {
     createColumnHelper,
 } from "@tanstack/react-table";
 import axiosClient from "../api/axiosClient";
-import { useState } from "react";
 
 const columnHelper = createColumnHelper();
 
 function Employees() {
     const queryClient = useQueryClient();
+
     const [form, setForm] = useState({
         first_name: "",
         last_name: "",
@@ -20,14 +21,23 @@ function Employees() {
         salary: "",
     });
 
-    const { data: employees = [], isLoading, error } = useQuery({
+    // ---- DATA FETCH (READ) ----
+    const {
+        data: employees = [],
+        isLoading,
+        error,
+    } = useQuery({
         queryKey: ["employees"],
         queryFn: async () => {
             const res = await axiosClient.get("/emp/employees");
             return res.data;
         },
+        // Helps avoid over-eager refetching that can cause jank
+        refetchOnWindowFocus: false,
+        staleTime: 1000 * 30, // 30 seconds
     });
 
+    // ---- CREATE EMPLOYEE ----
     const createEmployee = useMutation({
         mutationFn: async (payload) => {
             return axiosClient.post("/emp/employees", payload);
@@ -37,6 +47,7 @@ function Employees() {
         },
     });
 
+    // ---- DELETE EMPLOYEE ----
     const deleteEmployee = useMutation({
         mutationFn: async (eid) => {
             return axiosClient.delete(`/emp/employees/${eid}`);
@@ -46,11 +57,15 @@ function Employees() {
         },
     });
 
+    // ---- TABLE COLUMNS ----
     const columns = [
-        columnHelper.accessor(row => `${row.first_name} ${row.last_name}`, {
-            id: "name",
-            header: "Name",
-        }),
+        columnHelper.accessor(
+            (row) => `${row.first_name ?? ""} ${row.last_name ?? ""}`,
+            {
+                id: "name",
+                header: "Name",
+            }
+        ),
         columnHelper.accessor("email", {
             header: "Email",
         }),
@@ -59,12 +74,23 @@ function Employees() {
         }),
         columnHelper.accessor("salary", {
             header: "Salary",
+            cell: ({ getValue }) => {
+                const v = getValue();
+                return v != null ? v : "";
+            },
         }),
         columnHelper.display({
             id: "actions",
             header: "Actions",
             cell: ({ row }) => (
-                <button onClick={() => deleteEmployee.mutate(row.original._id)}>
+                <button
+                    type="button"
+                    onClick={() => {
+                        const id = row.original?._id;
+                        if (!id) return;
+                        deleteEmployee.mutate(id);
+                    }}
+                >
                     Delete
                 </button>
             ),
@@ -77,19 +103,23 @@ function Employees() {
         getCoreRowModel: getCoreRowModel(),
     });
 
+    // ---- FORM HANDLERS ----
     const handleChange = (e) => {
+        const { name, value } = e.target;
         setForm((prev) => ({
             ...prev,
-            [e.target.name]: e.target.value,
+            [name]: value,
         }));
     };
 
     const handleCreate = (e) => {
         e.preventDefault();
+
         createEmployee.mutate({
             ...form,
             salary: Number(form.salary),
         });
+
         setForm({
             first_name: "",
             last_name: "",
@@ -99,11 +129,15 @@ function Employees() {
         });
     };
 
+    // ---- RENDER ----
     return (
-        <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+        <div style={{ maxWidth: "800px", margin: "0 auto", padding: "20px" }}>
             <h2>Employees</h2>
+
             {isLoading && <p>Loading employees...</p>}
-            {error && <p style={{ color: "red" }}>Failed to load employees</p>}
+            {error && (
+                <p style={{ color: "red" }}>Failed to load employees. Check console/network.</p>
+            )}
 
             <h3>Add Employee</h3>
             <form onSubmit={handleCreate} style={{ marginBottom: "20px" }}>
@@ -127,6 +161,7 @@ function Employees() {
                         style={{ flex: 1 }}
                     />
                 </div>
+
                 <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
                     <input
                         type="email"
@@ -147,6 +182,7 @@ function Employees() {
                         style={{ flex: 1 }}
                     />
                 </div>
+
                 <div style={{ marginBottom: "10px" }}>
                     <input
                         type="number"
@@ -158,18 +194,25 @@ function Employees() {
                         style={{ width: "100%" }}
                     />
                 </div>
-                <button type="submit">Create Employee</button>
+
+                <button type="submit" disabled={createEmployee.isPending}>
+                    {createEmployee.isPending ? "Creating..." : "Create Employee"}
+                </button>
             </form>
 
             <h3>Employee List</h3>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                {table.getHeaderGroups().map(headerGroup => (
+                {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
-                        {headerGroup.headers.map(header => (
+                        {headerGroup.headers.map((header) => (
                             <th
                                 key={header.id}
-                                style={{ borderBottom: "1px solid #ccc", padding: "8px", textAlign: "left" }}
+                                style={{
+                                    borderBottom: "1px solid #ccc",
+                                    padding: "8px",
+                                    textAlign: "left",
+                                }}
                             >
                                 {flexRender(header.column.columnDef.header, header.getContext())}
                             </th>
@@ -178,9 +221,9 @@ function Employees() {
                 ))}
                 </thead>
                 <tbody>
-                {table.getRowModel().rows.map(row => (
-                    <tr key={row.id}>
-                        {row.getVisibleCells().map(cell => (
+                {table.getRowModel().rows.map((row) => (
+                    <tr key={row.original?._id || row.id}>
+                        {row.getVisibleCells().map((cell) => (
                             <td
                                 key={cell.id}
                                 style={{ padding: "8px", borderBottom: "1px solid #eee" }}

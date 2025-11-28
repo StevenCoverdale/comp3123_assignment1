@@ -1,11 +1,18 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');   // ✅ ADD THIS
 const userRoutes = require('./routes/userRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ✅ ENABLE CORS FOR FRONTEND (3001)
+app.use(cors({
+    origin: "http://localhost:3001",
+    credentials: true,
+}));
 
 app.use(express.json());
 
