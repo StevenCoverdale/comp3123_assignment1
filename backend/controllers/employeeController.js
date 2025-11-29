@@ -1,4 +1,5 @@
 const Employee = require('../models/Employee');
+const { validationResult } = require('express-validator');
 
 exports.getAll = async (req, res) => {
     try {
@@ -10,19 +11,30 @@ exports.getAll = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     try {
-        const data = req.body;
-        const profile_picture = req.file ? `/uploads/${req.file.filename}` : null;
+        let profile_picture = null;
+
+        if (req.file && req.file.filename) {
+            profile_picture = `/uploads/${req.file.filename}`;
+        }
 
         const employee = new Employee({
-            ...data,
+            first_name: req.body.first_name,
+            last_name: req.body.last_name,
+            email: req.body.email,
+            position: req.body.position,
+            department: req.body.department,
             profile_picture,
             created_at: new Date(),
             updated_at: new Date()
         });
 
         await employee.save();
-
         res.status(201).json(employee);
     } catch (err) {
         res.status(500).json({ status: false, message: err.message });
@@ -42,6 +54,11 @@ exports.getOne = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     try {
         const updates = req.body;
 

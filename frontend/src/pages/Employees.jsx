@@ -1,6 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axiosClient from "../api/axiosClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+/* Debounce Hook */
+function useDebounce(value, delay = 300) {
+    const [debounced, setDebounced] = useState(value);
+
+    useEffect(() => {
+        const handler = setTimeout(() => setDebounced(value), delay);
+        return () => clearTimeout(handler);
+    }, [value, delay]);
+
+    return debounced;
+}
 
 function Employees() {
     const queryClient = useQueryClient();
@@ -9,14 +21,16 @@ function Employees() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [search, setSearch] = useState("");
 
+    const debouncedSearch = useDebounce(search, 300);
+
     const { data: employees, isLoading } = useQuery({
-        queryKey: ["employees", search],
+        queryKey: ["employees", debouncedSearch],
         queryFn: () => {
-            if (!search.trim()) {
+            if (!debouncedSearch.trim()) {
                 return axiosClient.get("/emp/employees").then((res) => res.data);
             }
             return axiosClient
-                .get("/emp/employees/search", { params: { query: search } })
+                .get("/emp/employees/search", { params: { query: debouncedSearch } })
                 .then((res) => res.data);
         },
     });
@@ -30,6 +44,10 @@ function Employees() {
             queryClient.invalidateQueries(["employees"]);
             setIsEditOpen(false);
         },
+        onError: (error) => {
+            console.error("Create employee error:", error.response?.data);
+            alert("Failed to create employee. Check all required fields.");
+        },
     });
 
     const updateEmployee = useMutation({
@@ -40,6 +58,10 @@ function Employees() {
         onSuccess: () => {
             queryClient.invalidateQueries(["employees"]);
             setIsEditOpen(false);
+        },
+        onError: (error) => {
+            console.error("Update employee error:", error.response?.data);
+            alert("Failed to update employee. Check all required fields.");
         },
     });
 
@@ -150,6 +172,9 @@ function Employees() {
                         });
                         if (file) {
                             formData.append("profile_picture", file);
+                        }
+                        for (let pair of formData.entries()) {
+                            console.log(pair[0] + ':', pair[1]);
                         }
 
                         if (selectedEmployee._id) {
