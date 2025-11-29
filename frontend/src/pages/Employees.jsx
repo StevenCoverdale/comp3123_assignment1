@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import axiosClient from "../api/axiosClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+// ✅ You forgot this import — this was causing the React error
+import EditEmployeeModal from "../components/EditEmployeeModal";
+
 /* Debounce Hook */
 function useDebounce(value, delay = 300) {
     const [debounced, setDebounced] = useState(value);
