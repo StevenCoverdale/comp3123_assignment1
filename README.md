@@ -25,25 +25,18 @@ password: password123
 This user is preloaded in the database for marking.
 
 ----------------------------------------------
-How to Run
+Running with Docker
 ----------------------------------------------
 
-Backend:
-1. cd backend
-2. npm install
-3. Create a .env file with:
-   PORT=3000
-   MONGODB_URI=<your mongo uri>
-   JWT_SECRET=MySuperSecretKey123!@#
-4. npm start
+1. Make sure Docker Desktop is running
+2. From the project root (where docker-compose.yml is):
+   docker compose up --build
 
-Frontend:
-1. cd frontend
-2. npm install
-3. npm start
+After it starts:
+Backend is available at:  http://localhost:3000
+Frontend is available at: http://localhost:8081
+MongoDB runs inside the container
 
-Backend runs on http://localhost:3000  
-Frontend runs on http://http://localhost:8081
 
 ----------------------------------------------
 API Notes
