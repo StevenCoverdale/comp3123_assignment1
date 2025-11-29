@@ -86,22 +86,49 @@ function Employees() {
                 style={searchStyle}
             />
 
-            <button
-                onClick={() => {
-                    setSelectedEmployee({
-                        first_name: "",
-                        last_name: "",
-                        email: "",
-                        department: "",
-                        position: "",
-                        profile_picture: null,
-                    });
-                    setIsEditOpen(true);
+            {/* Top bar: Add + Logout */}
+            <div
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "20px",
                 }}
-                style={addButtonStyle}
             >
-                + Add New Employee
-            </button>
+                <button
+                    onClick={() => {
+                        setSelectedEmployee({
+                            first_name: "",
+                            last_name: "",
+                            email: "",
+                            department: "",
+                            position: "",
+                            profile_picture: null,
+                        });
+                        setIsEditOpen(true);
+                    }}
+                    style={addButtonStyle}
+                >
+                    + Add New Employee
+                </button>
+
+                <button
+                    onClick={() => {
+                        localStorage.removeItem("token");
+                        window.location.href = "/login";
+                    }}
+                    style={{
+                        padding: "10px 16px",
+                        background: "#e11d48",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                    }}
+                >
+                    Logout
+                </button>
+            </div>
 
             <div style={cardStyle}>
                 <table style={tableStyle}>
@@ -173,9 +200,6 @@ function Employees() {
                         if (file) {
                             formData.append("profile_picture", file);
                         }
-                        for (let pair of formData.entries()) {
-                            console.log(pair[0] + ':', pair[1]);
-                        }
 
                         if (selectedEmployee._id) {
                             updateEmployee.mutate({
@@ -194,84 +218,41 @@ function Employees() {
 
 export default Employees;
 
-function EditEmployeeModal({ employee, onClose, onSave }) {
-    const [form, setForm] = useState({
-        first_name: employee?.first_name || "",
-        last_name: employee?.last_name || "",
-        email: employee?.email || "",
-        department: employee?.department || "",
-        position: employee?.position || "",
-    });
-
-    const [file, setFile] = useState(null);
-
-    const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
-
-    return (
-        <div style={backdropStyle}>
-            <div style={modalStyle}>
-                <h2 style={{ marginBottom: "15px" }}>
-                    {employee._id ? "Edit Employee" : "Add New Employee"}
-                </h2>
-
-                <div style={modalFormStyle}>
-                    <input name="first_name" value={form.first_name} onChange={handleChange} placeholder="First Name" />
-                    <input name="last_name" value={form.last_name} onChange={handleChange} placeholder="Last Name" />
-                    <input name="email" value={form.email} onChange={handleChange} placeholder="Email" />
-                    <input name="department" value={form.department} onChange={handleChange} placeholder="Department" />
-                    <input name="position" value={form.position} onChange={handleChange} placeholder="Position" />
-
-                    <input type="file" onChange={(e) => setFile(e.target.files[0])} />
-                </div>
-
-                <div style={modalButtonRow}>
-                    <button onClick={() => onSave(form, file)} style={saveButtonStyle}>Save</button>
-                    <button onClick={onClose} style={cancelButtonStyle}>Cancel</button>
-                </div>
-            </div>
-        </div>
-    );
-}
+/* ------------------ Styles ------------------ */
 
 const pageStyle = {
-    padding: "30px",
-    fontFamily: "Arial, sans-serif",
-    background: "#f5f7fa",
-    minHeight: "100vh",
+    padding: "20px",
+    maxWidth: "900px",
+    margin: "0 auto",
 };
 
 const titleStyle = {
+    fontSize: "32px",
     marginBottom: "20px",
-    fontSize: "28px",
-    fontWeight: "600",
 };
 
 const searchStyle = {
-    padding: "10px 14px",
+    width: "100%",
+    padding: "10px",
+    marginBottom: "20px",
     borderRadius: "6px",
     border: "1px solid #ccc",
-    width: "260px",
-    marginBottom: "15px",
 };
 
 const addButtonStyle = {
     padding: "10px 16px",
-    background: "#4f46e5",
+    background: "#2563eb",
     color: "white",
     border: "none",
     borderRadius: "6px",
     cursor: "pointer",
-    marginBottom: "15px",
-    fontSize: "14px",
 };
 
 const cardStyle = {
     background: "white",
     padding: "20px",
-    borderRadius: "10px",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+    borderRadius: "8px",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
 };
 
 const tableStyle = {
@@ -281,72 +262,20 @@ const tableStyle = {
 
 const rowStyle = {
     cursor: "pointer",
-    transition: "background 0.2s",
 };
 
 const avatarStyle = {
-    width: "40px",
-    height: "40px",
+    width: "50px",
+    height: "50px",
     borderRadius: "50%",
     objectFit: "cover",
 };
 
 const deleteButtonStyle = {
-    padding: "6px 10px",
+    padding: "6px 12px",
     background: "#dc2626",
     color: "white",
     border: "none",
     borderRadius: "4px",
-    cursor: "pointer",
-};
-
-const backdropStyle = {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    background: "rgba(0,0,0,0.4)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-};
-
-const modalStyle = {
-    background: "white",
-    padding: "25px",
-    borderRadius: "10px",
-    width: "420px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-};
-
-const modalFormStyle = {
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-};
-
-const modalButtonRow = {
-    marginTop: "20px",
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: "10px",
-};
-
-const saveButtonStyle = {
-    padding: "10px 16px",
-    background: "#16a34a",
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-};
-
-const cancelButtonStyle = {
-    padding: "10px 16px",
-    background: "#6b7280",
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
     cursor: "pointer",
 };
