@@ -64,7 +64,3 @@ Extra Notes for Marker
 - React Query handles caching and refetching.
 - MongoDB seeded with sample user.
 - UI is simple and functional.
-
-----------------------------------------------
-End
-----------------------------------------------
